@@ -1,6 +1,7 @@
 package com.example.barcodereader;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.KeyEvent;
@@ -12,18 +13,22 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
+import java.util.List;
 
 public class InventoryRegisterActivity extends AppCompatActivity {
 
     private ListView listViewItems;
     private ArrayList<String> itemList;
     private CustomListAdapter adapter;
-    private View headerLayout;
+    private EditText editTextDocumentRef, editTextDocumentComment, editTextBarcode, editTextQuantity;
+    private long currentDocumentId = -1;
     private DatabaseHelper dbHelper;
 
     @Override
@@ -32,7 +37,10 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_inventory_register);
 
         listViewItems = findViewById(R.id.listViewItems);
-        headerLayout = findViewById(R.id.headerLayout);
+        editTextDocumentRef = findViewById(R.id.editTextDocumentRef);
+        editTextDocumentComment = findViewById(R.id.editTextDocumentComment);
+        editTextBarcode = findViewById(R.id.editTextBarcode);
+        editTextQuantity = findViewById(R.id.editTextQuantity);
         dbHelper = new DatabaseHelper(this);
 
         itemList = new ArrayList<>();
@@ -41,18 +49,17 @@ public class InventoryRegisterActivity extends AppCompatActivity {
 
         setupEditTexts();
 
-        listViewItems.setOnItemClickListener((parent, view, position, id) -> editQuantityForItem(position));  // Set item click listener for editing quantity
+        Button btnNewDocument = findViewById(R.id.btnNewDocument);
+        btnNewDocument.setOnClickListener(v -> createNewDocument());
+
+        Button btnOpenDocument = findViewById(R.id.btnOpenDocument);
+        btnOpenDocument.setOnClickListener(v -> openDocument());
 
         Button btnSaveToDatabase = findViewById(R.id.btnSaveToDatabase);
         btnSaveToDatabase.setOnClickListener(v -> saveDataToDatabase());
-
-        headerLayout.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void setupEditTexts() {
-        EditText editTextBarcode = findViewById(R.id.editTextBarcode);
-        EditText editTextQuantity = findViewById(R.id.editTextQuantity);
-
         editTextBarcode.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
                 editTextQuantity.setVisibility(View.VISIBLE);
@@ -75,47 +82,81 @@ public class InventoryRegisterActivity extends AppCompatActivity {
                     editTextBarcode.requestFocus();
                     return true;
                 }
-                return true;
+                return false;
             }
             return false;
         });
     }
 
+    private void createNewDocument() {
+        String reference = editTextDocumentRef.getText().toString();
+        String comment = editTextDocumentComment.getText().toString();
+        if (!reference.isEmpty()) {
+            currentDocumentId = dbHelper.addDocument(reference, comment);
+            editTextDocumentRef.setText("");
+            editTextDocumentComment.setText("");
+            itemList.clear();
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    private void openDocument() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select a Document");
+
+        Cursor cursor = dbHelper.getAllDocuments();
+        List<String> documents = new ArrayList<>();
+        int indexDocId = cursor.getColumnIndex("DocumentID");
+        int indexRef = cursor.getColumnIndex("Reference");
+
+        if (indexDocId != -1 && indexRef != -1) {  // Check if columns exist
+            while (cursor.moveToNext()) {
+                long docId = cursor.getLong(indexDocId);
+                String ref = cursor.getString(indexRef);
+                documents.add(ref + " - ID: " + docId);
+            }
+        } else {
+            // Log error or inform the user that necessary columns are missing
+            Toast.makeText(this, "Error: Necessary columns are missing in the database.", Toast.LENGTH_LONG).show();
+        }
+        cursor.close();
+
+        CharSequence[] items = documents.toArray(new CharSequence[0]);
+        builder.setItems(items, (dialog, which) -> {
+            String selection = documents.get(which);
+            currentDocumentId = Long.parseLong(selection.split(" - ID: ")[1]);
+            editTextDocumentRef.setText(selection.split(" - ID: ")[0]);
+            itemList.clear();  // Clear current items as we are opening a new document context
+            adapter.notifyDataSetChanged();
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+
     private void saveDataToDatabase() {
+        if (currentDocumentId == -1) {
+            // Prompt user to create or select a document first
+            new AlertDialog.Builder(this)
+                    .setTitle("Error")
+                    .setMessage("Please create or open a document first.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            return;
+        }
+
         for (String item : itemList) {
             String[] parts = item.split(" - ");
             if (parts.length == 2) {
                 String barcode = parts[0];
                 int quantity = Integer.parseInt(parts[1]);
-                dbHelper.addBarcode(barcode, quantity);
+                dbHelper.addBarcode(barcode, quantity, currentDocumentId);
             }
         }
         itemList.clear();
         adapter.notifyDataSetChanged();
-    }
-
-    private void editQuantityForItem(final int position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Edit Quantity");
-
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        builder.setView(input);
-
-        builder.setPositiveButton("OK", (dialog, which) -> {
-            String newQuantityStr = input.getText().toString();
-            if (!newQuantityStr.isEmpty()) {
-                int newQuantity = Integer.parseInt(newQuantityStr);
-                String item = itemList.get(position);
-                String[] parts = item.split(" - ");
-                String updatedItem = parts[0] + " - " + newQuantity;
-                itemList.set(position, updatedItem);
-                adapter.notifyDataSetChanged();
-            }
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        builder.show();
+        // Optionally show a success message or update the UI
     }
 
     private class CustomListAdapter extends ArrayAdapter<String> {
@@ -143,8 +184,6 @@ public class InventoryRegisterActivity extends AppCompatActivity {
 
             TextView textViewQuantity = convertView.findViewById(R.id.textViewQuantity);
             textViewQuantity.setText(quantity);
-            // Set an OnClickListener specifically for the quantity TextView
-            textViewQuantity.setOnClickListener(v -> editQuantityForItem(position));
 
             Button btnDelete = convertView.findViewById(R.id.btnEditQuantity);
             btnDelete.setText("Delete");
@@ -156,5 +195,4 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             return convertView;
         }
     }
-
 }

@@ -65,6 +65,45 @@
         android:layout_marginEnd="16dp"
         android:layout_marginRight="16dp"
         android:layout_marginBottom="16dp" />
+    <EditText
+        android:id="@+id/editTextDocumentComment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:hint="Komenti"
+        android:minHeight="48dp"
+        android:inputType="text"/>
+
+    <EditText
+        android:id="@+id/editTextDocumentRef"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/editTextBarcode"
+        android:layout_margin="16dp"
+        android:hint="Referenca"
+        android:minHeight="48dp"
+        android:visibility="gone"
+        android:inputType="text"/>
+    <Button
+        android:id="@+id/btnNewDocument"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Document"
+        android:layout_below="@id/editTextQuantity"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/btnOpenDocument"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Open Document"
+        android:layout_below="@id/editTextQuantity"
+        android:layout_toEndOf="@id/btnNewDocument"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"/>
 
     <Button
         android:id="@+id/btnSaveToDatabase"
@@ -74,4 +113,5 @@
         android:layout_below="@id/listViewItems"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"/>
+
 </RelativeLayout>
