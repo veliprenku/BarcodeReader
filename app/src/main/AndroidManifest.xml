@@ -24,8 +24,12 @@
             </intent-filter>
         </activity>
         <activity android:name=".InventoryRegisterActivity"/>
+        <activity android:name=".ExportExcelActivity"/>
+
 
     </application>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
 
 </manifest>

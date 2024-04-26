@@ -23,7 +23,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
     private ListView listViewItems;
     private ArrayList<String> itemList;
     private CustomListAdapter adapter;
-    private View headerLayout;  // Reference to the header layout
+    private View headerLayout;
     private DatabaseHelper dbHelper;
 
     @Override
@@ -32,24 +32,20 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_inventory_register);
 
         listViewItems = findViewById(R.id.listViewItems);
-        headerLayout = findViewById(R.id.headerLayout);  // Initialize the header layout
-        dbHelper = new DatabaseHelper(this);  // Initialize the DatabaseHelper
+        headerLayout = findViewById(R.id.headerLayout);
+        dbHelper = new DatabaseHelper(this);
 
         itemList = new ArrayList<>();
         adapter = new CustomListAdapter(this, itemList);
         listViewItems.setAdapter(adapter);
 
-        setupEditTexts(); // Setup EditTexts for barcode and quantity input
+        setupEditTexts();
+
+        listViewItems.setOnItemClickListener((parent, view, position, id) -> editQuantityForItem(position));  // Set item click listener for editing quantity
 
         Button btnSaveToDatabase = findViewById(R.id.btnSaveToDatabase);
-        btnSaveToDatabase.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveDataToDatabase();
-            }
-        });
+        btnSaveToDatabase.setOnClickListener(v -> saveDataToDatabase());
 
-        // Initially hide the header if the list is empty
         headerLayout.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
@@ -61,9 +57,9 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
                 editTextQuantity.setVisibility(View.VISIBLE);
                 editTextQuantity.requestFocus();
-                return true; // Event was handled
+                return true;
             }
-            return false; // Event was not handled
+            return false;
         });
 
         editTextQuantity.setOnKeyListener((v, keyCode, event) -> {
@@ -77,14 +73,13 @@ public class InventoryRegisterActivity extends AppCompatActivity {
                     editTextQuantity.setText("");
                     editTextQuantity.setVisibility(View.GONE);
                     editTextBarcode.requestFocus();
-                    return true; // Event was handled
+                    return true;
                 }
-                return true; // Event was handled (even if fields are empty, the key event itself is considered handled)
+                return true;
             }
-            return false; // Event was not handled
+            return false;
         });
     }
-
 
     private void saveDataToDatabase() {
         for (String item : itemList) {
@@ -92,11 +87,35 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             if (parts.length == 2) {
                 String barcode = parts[0];
                 int quantity = Integer.parseInt(parts[1]);
-                dbHelper.addBarcode(barcode, quantity);  // Save each item to the database
+                dbHelper.addBarcode(barcode, quantity);
             }
         }
-        itemList.clear();  // Optionally, clear the list after saving to database
+        itemList.clear();
         adapter.notifyDataSetChanged();
+    }
+
+    private void editQuantityForItem(final int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Edit Quantity");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String newQuantityStr = input.getText().toString();
+            if (!newQuantityStr.isEmpty()) {
+                int newQuantity = Integer.parseInt(newQuantityStr);
+                String item = itemList.get(position);
+                String[] parts = item.split(" - ");
+                String updatedItem = parts[0] + " - " + newQuantity;
+                itemList.set(position, updatedItem);
+                adapter.notifyDataSetChanged();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
     }
 
     private class CustomListAdapter extends ArrayAdapter<String> {
@@ -124,35 +143,18 @@ public class InventoryRegisterActivity extends AppCompatActivity {
 
             TextView textViewQuantity = convertView.findViewById(R.id.textViewQuantity);
             textViewQuantity.setText(quantity);
+            // Set an OnClickListener specifically for the quantity TextView
+            textViewQuantity.setOnClickListener(v -> editQuantityForItem(position));
 
-            Button btnEditQuantity = convertView.findViewById(R.id.btnEditQuantity);
-            btnEditQuantity.setOnClickListener(v -> editQuantityForItem(position));
+            Button btnDelete = convertView.findViewById(R.id.btnEditQuantity);
+            btnDelete.setText("Delete");
+            btnDelete.setOnClickListener(v -> {
+                itemList.remove(position);
+                notifyDataSetChanged();
+            });
 
             return convertView;
         }
-
-        private void editQuantityForItem(final int position) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setTitle("Edit Quantity");
-
-            final EditText input = new EditText(getContext());
-            input.setInputType(InputType.TYPE_CLASS_NUMBER);
-            builder.setView(input);
-
-            builder.setPositiveButton("OK", (dialog, which) -> {
-                String newQuantityStr = input.getText().toString();
-                if (!newQuantityStr.isEmpty()) {
-                    int newQuantity = Integer.parseInt(newQuantityStr);
-                    String item = itemList.get(position);
-                    String[] parts = item.split(" - ");
-                    String updatedItem = parts[0] + " - " + newQuantity;
-                    itemList.set(position, updatedItem);
-                    notifyDataSetChanged();  // Notify the adapter to refresh the list
-                }
-            });
-            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-            builder.show();
-        }
     }
+
 }
