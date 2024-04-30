@@ -23,10 +23,10 @@
         android:paddingEnd="16dp"/>
 
     <Button
-        android:id="@+id/btnEditQuantity"
+        android:id="@+id/btnDelete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Edit"
+        android:text="Fshij"
         android:textSize="16sp"
         android:paddingLeft="16dp"/>
 

@@ -10,7 +10,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:hint="Enter Barcode"
+        android:hint="Shkruaj barkodin"
         android:minHeight="48dp"
         android:inputType="number"/>
 
@@ -20,20 +20,18 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/editTextBarcode"
         android:layout_margin="16dp"
-        android:hint="Enter Quantity"
+        android:hint="Shkruaj sasinë"
         android:minHeight="48dp"
         android:visibility="gone"
         android:inputType="number"/>
 
-    <!-- Dynamically displayed header -->
     <LinearLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_below="@id/editTextQuantity"
-        android:padding="8dp"
-       >
+        android:padding="8dp">
 
         <TextView
             android:layout_width="0dp"
@@ -45,7 +43,7 @@
             android:paddingStart="30dp"/>
 
         <TextView
-            android:layout_width="213dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="end"
@@ -56,62 +54,61 @@
 
     <ListView
         android:id="@+id/listViewItems"
-        android:layout_width="wrap_content"
-        android:layout_height="511dp"
+        android:layout_width="match_parent"
+        android:layout_height="356dp"
         android:layout_below="@id/headerLayout"
         android:layout_marginStart="16dp"
-        android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginRight="16dp"
         android:layout_marginBottom="16dp" />
+
     <EditText
         android:id="@+id/editTextDocumentComment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_below="@id/listViewItems"
+        android:layout_margin="16dp"
         android:hint="Komenti"
-        android:minHeight="48dp"
-        android:inputType="text"/>
+        android:inputType="text"
+        android:minHeight="48dp" />
 
     <EditText
         android:id="@+id/editTextDocumentRef"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/editTextBarcode"
+        android:layout_below="@id/editTextDocumentComment"
         android:layout_margin="16dp"
         android:hint="Referenca"
         android:minHeight="48dp"
-        android:visibility="gone"
         android:inputType="text"/>
-    <Button
-        android:id="@+id/btnNewDocument"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="New Document"
-        android:layout_below="@id/editTextQuantity"
-        android:layout_alignParentStart="true"
-        android:layout_marginTop="16dp"/>
 
-    <Button
-        android:id="@+id/btnOpenDocument"
-        android:layout_width="wrap_content"
+    <!-- Buttons grouped in a horizontal LinearLayout -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Open Document"
-        android:layout_below="@id/editTextQuantity"
-        android:layout_toEndOf="@id/btnNewDocument"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"/>
+        android:layout_below="@id/editTextDocumentRef"
+        android:layout_marginTop="16dp">
 
-    <Button
-        android:id="@+id/btnSaveToDatabase"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Save to Database"
-        android:layout_below="@id/listViewItems"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"/>
+        <Button
+            android:id="@+id/btnNewDocument"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Krijo të re" />
+
+        <Button
+            android:id="@+id/btnOpenDocument"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Hape" />
+
+        <Button
+            android:id="@+id/btnSaveToDatabase"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Ruaj" />
+    </LinearLayout>
 
 </RelativeLayout>

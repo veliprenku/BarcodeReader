@@ -19,7 +19,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class InventoryRegisterActivity extends AppCompatActivity {
@@ -50,12 +52,22 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         setupEditTexts();
 
         Button btnNewDocument = findViewById(R.id.btnNewDocument);
-        btnNewDocument.setOnClickListener(v -> createNewDocument());
-
         Button btnOpenDocument = findViewById(R.id.btnOpenDocument);
-        btnOpenDocument.setOnClickListener(v -> openDocument());
-
         Button btnSaveToDatabase = findViewById(R.id.btnSaveToDatabase);
+
+        btnNewDocument.setOnClickListener(v -> {
+            // Pastro elementët e UI dhe rivendos currentDocumentId në -1
+            editTextDocumentRef.setText("");
+            editTextDocumentComment.setText("");
+            editTextBarcode.setText("");
+            editTextQuantity.setText("");
+            editTextQuantity.setVisibility(View.GONE);
+            itemList.clear();
+            adapter.notifyDataSetChanged();
+            currentDocumentId = -1;
+        });
+
+        btnOpenDocument.setOnClickListener(v -> openDocument());
         btnSaveToDatabase.setOnClickListener(v -> saveDataToDatabase());
     }
 
@@ -88,95 +100,183 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         });
     }
 
-    private void createNewDocument() {
-        String reference = editTextDocumentRef.getText().toString();
-        String comment = editTextDocumentComment.getText().toString();
-        if (!reference.isEmpty()) {
-            currentDocumentId = dbHelper.addDocument(reference, comment);
-            editTextDocumentRef.setText("");
-            editTextDocumentComment.setText("");
-            itemList.clear();
-            adapter.notifyDataSetChanged();
-        }
-    }
-
     private void openDocument() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select a Document");
 
         Cursor cursor = dbHelper.getAllDocuments();
         List<String> documents = new ArrayList<>();
-        int indexDocId = cursor.getColumnIndex("DocumentID");
-        int indexRef = cursor.getColumnIndex("Reference");
+        List<Long> documentIds = new ArrayList<>(); // Store document IDs
 
-        if (indexDocId != -1 && indexRef != -1) {  // Check if columns exist
-            while (cursor.moveToNext()) {
-                long docId = cursor.getLong(indexDocId);
-                String ref = cursor.getString(indexRef);
+        int idIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_DOCUMENT_ID);
+        int refIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_REFERENCE);
+        int commentIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_COMMENT);
+
+        while (cursor.moveToNext()) {
+            if (idIndex != -1 && refIndex != -1 && commentIndex != -1) {
+                long docId = cursor.getLong(idIndex);
+                String ref = cursor.getString(refIndex);
+                String comment = cursor.getString(commentIndex);
                 documents.add(ref + " - ID: " + docId);
+                documentIds.add(docId); // Add document ID to the list
             }
-        } else {
-            // Log error or inform the user that necessary columns are missing
-            Toast.makeText(this, "Error: Necessary columns are missing in the database.", Toast.LENGTH_LONG).show();
         }
         cursor.close();
 
-        CharSequence[] items = documents.toArray(new CharSequence[0]);
+        CharSequence[] items = documents.toArray(new CharSequence[documents.size()]);
         builder.setItems(items, (dialog, which) -> {
-            String selection = documents.get(which);
-            currentDocumentId = Long.parseLong(selection.split(" - ID: ")[1]);
-            editTextDocumentRef.setText(selection.split(" - ID: ")[0]);
-            itemList.clear();  // Clear current items as we are opening a new document context
-            adapter.notifyDataSetChanged();
+            // Get the document ID from the list using the selected index
+            long selectedDocumentId = documentIds.get(which);
+            // Fetch document details using the selected document ID
+            InventoryDocument selectedDocument = dbHelper.getDocumentById(selectedDocumentId);
+            // Update UI with the selected document details
+            currentDocumentId = selectedDocument.id;
+            editTextDocumentRef.setText(selectedDocument.reference);
+            editTextDocumentComment.setText(selectedDocument.comment);
+
+            // Load barcodes associated with the selected document
+            loadItemsForDocument(selectedDocumentId);
+
+            // Create a custom layout for the dialog
+            LayoutInflater inflater = getLayoutInflater();
+            View dialogView = inflater.inflate(R.layout.dialog_custom_layout, null);
+
+            // Find the delete button in the custom layout
+            Button btnDeleteDocument = dialogView.findViewById(R.id.btnDeleteDocument);
+            btnDeleteDocument.setOnClickListener(view -> {
+                // Call a method to delete the document and its associated barcodes
+                deleteDocument(selectedDocumentId);
+                dialog.dismiss();
+            });
+
+            // Set the custom view to the dialog builder
+            builder.setView(dialogView);
+
+            // Create and show the dialog after setting the custom view
+            AlertDialog alertDialog = builder.create();
+            alertDialog.show();
         });
 
+        // Create and show the dialog without a custom view
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
 
+
+
+    private void loadItemsForDocument(long docId) {
+        Cursor cursor = dbHelper.getBarcodesForDocument(docId);
+        itemList.clear();
+        int barcodeIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_BARCODE);
+        int quantityIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_QUANTITY);
+
+        while (cursor.moveToNext()) {
+            if (barcodeIndex != -1 && quantityIndex != -1) {
+                String barcode = cursor.getString(barcodeIndex);
+                int quantity = cursor.getInt(quantityIndex);
+                itemList.add(barcode + " - " + quantity);
+            }
+        }
+        cursor.close();
+        adapter.notifyDataSetChanged();
+    }
+
     private void saveDataToDatabase() {
-        if (currentDocumentId == -1) {
-            // Prompt user to create or select a document first
-            new AlertDialog.Builder(this)
-                    .setTitle("Error")
-                    .setMessage("Please create or open a document first.")
-                    .setPositiveButton("OK", null)
-                    .show();
+        String reference = editTextDocumentRef.getText().toString();
+        String comment = editTextDocumentComment.getText().toString();
+        if (reference.isEmpty()) {
+            Toast.makeText(this, "Shkruani një referencë për ta ruajtur.", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        if (currentDocumentId == -1) {
+            // If no current document is selected, create a new one
+            currentDocumentId = dbHelper.addDocument(reference, comment);
+            if (currentDocumentId != -1) {
+                Toast.makeText(this, "U krijua dokument i ri me ID : " + currentDocumentId, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "Gabim gjatë krijimit.", Toast.LENGTH_LONG).show();
+                return;
+            }
+        } else {
+            // If a current document is selected, update its reference and comment
+            dbHelper.updateDocument(currentDocumentId, reference, comment);
+        }
+
+        // HashSet to store unique barcodes
+        HashSet<String> uniqueBarcodes = new HashSet<>();
+
+        // Save the data to the database
         for (String item : itemList) {
             String[] parts = item.split(" - ");
             if (parts.length == 2) {
                 String barcode = parts[0];
                 int quantity = Integer.parseInt(parts[1]);
-                dbHelper.addBarcode(barcode, quantity, currentDocumentId);
+
+                if (!uniqueBarcodes.contains(barcode)) {
+                    // Add the barcode to the HashSet if it's not already present
+                    uniqueBarcodes.add(barcode);
+
+                    // Add the item to the list and database
+                    itemList.add(barcode + " - " + quantity);
+                    dbHelper.addBarcode(barcode, quantity, currentDocumentId);
+                } else {
+                    // Display a message that the barcode already exists
+                    Toast.makeText(this, "Barcode " + barcode + " already exists.", Toast.LENGTH_SHORT).show();
+                }
             }
         }
+
+        // Clear the list and notify adapter
         itemList.clear();
         adapter.notifyDataSetChanged();
-        // Optionally show a success message or update the UI
+
+        // Display success message
+        Toast.makeText(this, "Të dhënat janë të ruajtura me sukses", Toast.LENGTH_SHORT).show();
+
+        // Reset UI elements for a new document
+        editTextDocumentRef.setText("");
+        editTextDocumentComment.setText("");
+        editTextBarcode.setText("");
+        editTextQuantity.setText("");
+        editTextQuantity.setVisibility(View.GONE);
+        currentDocumentId = -1;
     }
+
+
+    private void deleteDocument(long documentId) {
+        // Delete the document and its associated barcodes from the database
+        dbHelper.deleteDocument(documentId);
+
+        // Refresh UI
+        editTextDocumentRef.setText("");
+        editTextDocumentComment.setText("");
+        itemList.clear();
+        adapter.notifyDataSetChanged();
+
+        // Display success message
+        Toast.makeText(this, "Dokumenti u fshi!", Toast.LENGTH_SHORT).show();
+    }
+
 
     private class CustomListAdapter extends ArrayAdapter<String> {
         private ArrayList<String> itemList;
 
         public CustomListAdapter(Context context, ArrayList<String> itemList) {
             super(context, 0, itemList);
-            this.itemList = itemList;
+            this.itemList = itemList != null ? itemList : new ArrayList<>();
         }
 
-        @NonNull
         @Override
-        public View getView(final int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+        public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
             if (convertView == null) {
                 convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item, parent, false);
             }
 
             String currentItem = itemList.get(position);
             String[] parts = currentItem.split(" - ");
-            String barcode = parts[0];
+            final String barcode = parts[0];
             String quantity = parts[1];
 
             TextView textViewBarcode = convertView.findViewById(R.id.textViewBarcode);
@@ -185,14 +285,54 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             TextView textViewQuantity = convertView.findViewById(R.id.textViewQuantity);
             textViewQuantity.setText(quantity);
 
-            Button btnDelete = convertView.findViewById(R.id.btnEditQuantity);
-            btnDelete.setText("Delete");
+
+            textViewQuantity.setOnClickListener(v -> {
+                // Create a dialog to edit the quantity
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle("Ndrysho sasinë");
+
+                final EditText input = new EditText(getContext());
+                input.setText(quantity);
+                builder.setView(input);
+
+                builder.setPositiveButton("Ruaj", (dialog, which) -> {
+                    String newQuantity = input.getText().toString();
+                    // Update the quantity in the list
+                    String newItem = barcode + " - " + newQuantity;
+                    itemList.set(position, newItem);
+                    notifyDataSetChanged();
+
+                    // Update the quantity in the database
+                    dbHelper.updateBarcodeQuantity(barcode, Integer.parseInt(newQuantity), currentDocumentId);
+                });
+
+                builder.setNegativeButton("Anulo", (dialog, which) -> dialog.cancel());
+
+                builder.show();
+            });
+
+
+            // Find the delete button
+            Button btnDelete = convertView.findViewById(R.id.btnDelete);
+            btnDelete.setVisibility(View.VISIBLE); // Show the delete button
             btnDelete.setOnClickListener(v -> {
+                // Remove the item from the list
                 itemList.remove(position);
                 notifyDataSetChanged();
+
+                // Remove the item from the database
+                dbHelper.deleteBarcode(barcode, currentDocumentId);
             });
 
             return convertView;
         }
+
+
+
     }
+
+
+
+
 }
+
