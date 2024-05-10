@@ -10,6 +10,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnOpenInventory;
     private Button btnOpenExport;
+    private Button btnReports;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
         // Find buttons by their IDs
         btnOpenInventory = findViewById(R.id.btnOpenInventory);
         btnOpenExport = findViewById(R.id.btnOpenExport);
+        btnReports = findViewById(R.id.btnReports);
 
         // Set click listeners for the buttons
         btnOpenInventory.setOnClickListener(new View.OnClickListener() {
@@ -35,6 +37,14 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 // Open Export Excel Activity
                 Intent intent = new Intent(MainActivity.this, ExportExcelActivity.class);
+                startActivity(intent);
+            }
+        });
+        btnReports.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Open Export Excel Activity
+                Intent intent = new Intent(MainActivity.this, Reports.class);
                 startActivity(intent);
             }
         });

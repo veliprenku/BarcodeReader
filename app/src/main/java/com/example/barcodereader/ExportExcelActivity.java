@@ -1,26 +1,29 @@
 package com.example.barcodereader;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Cell;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public class ExportExcelActivity extends AppCompatActivity {
 
@@ -29,25 +32,24 @@ public class ExportExcelActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_export_excel);
+        setContentView(R.layout.activity_main);
         dbHelper = new DatabaseHelper(this);
 
-        Button btnExportExcel = findViewById(R.id.btnExportExcel);
-        btnExportExcel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showDocumentSelectionDialog();
-            }
-        });
+        Button btnExportExcel = findViewById(R.id.btnOpenExport);
+        showDocumentSelectionDialog();  // Call the dialog method directly here
     }
+
 
     private void showDocumentSelectionDialog() {
         Cursor cursor = dbHelper.getAllDocuments();
-        ArrayList<String> documentReferences = new ArrayList<>();
+        LinkedHashMap<String, String> documentMap = new LinkedHashMap<>();
         try {
+            int idIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_DOCUMENT_ID);
             int refIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_REFERENCE);
             while (cursor.moveToNext()) {
-                documentReferences.add(cursor.getString(refIndex));
+                String documentId = cursor.getString(idIndex);
+                String documentReference = cursor.getString(refIndex);
+                documentMap.put(documentReference, documentId);
             }
         } catch (IllegalArgumentException e) {
             Toast.makeText(this, "Gabim në skemën e databazës: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -55,18 +57,33 @@ public class ExportExcelActivity extends AppCompatActivity {
             cursor.close();
         }
 
+        List<String> documentReferences = new ArrayList<>(documentMap.keySet());
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.select_dialog_singlechoice, documentReferences);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Zgjidhni dokumentin");
+        builder.setCancelable(true);
         builder.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String reference = arrayAdapter.getItem(which);
-                exportDataToExcel(reference);
+                String documentId = documentMap.get(reference);
+                exportDataToExcel(documentId);
             }
         });
-        builder.show();
+
+        builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                finish();  // Close this activity when the dialog dismisses
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
+
+
+
 
 
 
@@ -76,50 +93,67 @@ public class ExportExcelActivity extends AppCompatActivity {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Barcode_Data_for_DocID_" + sanitizedDocumentId);
 
-        // Create header row
         Row headerRow = sheet.createRow(0);
-        headerRow.createCell(0).setCellValue("Document ID");
+        headerRow.createCell(0).setCellValue("DocumentID");
         headerRow.createCell(1).setCellValue("Barkodi");
         headerRow.createCell(2).setCellValue("Sasia");
         headerRow.createCell(3).setCellValue("Data e Regjistrimit");
         headerRow.createCell(4).setCellValue("Referenca");
         headerRow.createCell(5).setCellValue("Komenti");
 
-        // Populate the sheet with data related to the selected document ID
         Cursor cursor = dbHelper.getBarcodesByDocumentId(documentId);
-        int rowIndex = 1;
-        int documentIdIndex = cursor.getColumnIndexOrThrow("DocumentID");
-        int barcodeIndex = cursor.getColumnIndexOrThrow("Barcode");
-        int quantityIndex = cursor.getColumnIndexOrThrow("Quantity");
-        int dateRegIndex = cursor.getColumnIndexOrThrow("DateRegistered");
-        int referenceIndex = cursor.getColumnIndexOrThrow("Reference");
-        int commentIndex = cursor.getColumnIndexOrThrow("Comment");
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int documentIdIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_DOCUMENT_ID);
+            int barcodeIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_BARCODE);
+            int quantityIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_QUANTITY);
+            int dateRegIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_DATE_REGISTERED);
+            int referenceIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_REFERENCE);
+            int commentIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_COMMENT);
 
 
-        while (cursor.moveToNext()) {
-            Row row = sheet.createRow(rowIndex++);
-            row.createCell(0).setCellValue(cursor.getLong(documentIdIndex));
-            row.createCell(1).setCellValue(cursor.getString(barcodeIndex));
-            row.createCell(2).setCellValue(cursor.getInt(quantityIndex));
-            row.createCell(3).setCellValue(cursor.getString(dateRegIndex));
-            row.createCell(4).setCellValue(cursor.getString(referenceIndex));
-            row.createCell(5).setCellValue(cursor.getString(commentIndex));
+            do {
+
+                Row row = sheet.createRow(sheet.getLastRowNum() + 1);
+                row.createCell(0).setCellValue(cursor.getLong(documentIdIndex));
+                row.createCell(1).setCellValue(cursor.getString(barcodeIndex));
+                row.createCell(2).setCellValue(cursor.getString(quantityIndex));
+                row.createCell(3).setCellValue(cursor.getString(dateRegIndex));
+                row.createCell(4).setCellValue(cursor.getString(referenceIndex));
+                row.createCell(5).setCellValue(cursor.getString(commentIndex));
+
+            } while (cursor.moveToNext());
         }
-        cursor.close();
+        if (cursor != null) {
+            cursor.close();
+        }
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "BarcodeData_" + documentId + ".xlsx");
+        contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
 
-        // Save the workbook to storage
+        Uri uri = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues);
+        }
+
         try {
-            File file = new File(getExternalFilesDir(null), "BarcodeData_" + documentId + ".xlsx");
-            FileOutputStream outputStream = new FileOutputStream(file);
-            workbook.write(outputStream);
-            workbook.close();
-            outputStream.close();
-            Toast.makeText(this, "Është ruajtur në " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            if (uri != null) {
+                try (OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
+                    workbook.write(outputStream);
+                }
+                Toast.makeText(this, "File saved to Downloads", Toast.LENGTH_LONG).show();
+            } else {
+                throw new IOException("Failed to create new MediaStore record.");
+            }
         } catch (IOException e) {
-            Toast.makeText(this, "Gabim në eksportim : " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Failed to save file: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        } finally {
+            try {
+                workbook.close();
+            } catch (IOException e) {
+                Toast.makeText(this, "Error closing workbook: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
         }
     }
-
-
-
 }

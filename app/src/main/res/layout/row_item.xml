@@ -1,0 +1,50 @@
+<!-- row_item.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/tvDocumentId"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="Document ID"/>
+
+    <TextView
+        android:id="@+id/tvBarcode"
+        android:layout_width="0dp"
+        android:layout_weight="2"
+        android:layout_height="wrap_content"
+        android:text="Barcode"/>
+
+    <TextView
+        android:id="@+id/tvQuantity"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="Quantity"/>
+
+    <TextView
+        android:id="@+id/tvDate"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="Date"/>
+
+    <TextView
+        android:id="@+id/tvReference"
+        android:layout_width="0dp"
+        android:layout_weight="2"
+        android:layout_height="wrap_content"
+        android:text="Reference"/>
+
+    <TextView
+        android:id="@+id/tvComment"
+        android:layout_width="0dp"
+        android:layout_weight="2"
+        android:layout_height="wrap_content"
+        android:text="Comment"/>
+
+</LinearLayout>

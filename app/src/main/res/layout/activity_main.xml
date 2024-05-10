@@ -2,23 +2,46 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background">
+    android:background="@drawable/barcode">
 
     <Button
         android:id="@+id/btnOpenInventory"
-        android:layout_width="wrap_content"
+        android:layout_width="214dp"
         android:layout_height="wrap_content"
-        android:text="Open Inventory Register"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="50dp"/>
+        android:layout_marginTop="50dp"
+
+        android:background="@drawable/btn2"
+        android:text="Open Inventory Register" />
 
     <Button
+        android:layout_centerHorizontal="true"
         android:id="@+id/btnOpenExport"
+        android:layout_width="208dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btnOpenInventory"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="58dp"
+        android:layout_marginEnd="101dp"
+        android:background="@drawable/btn1"
+        android:text="Open Export Excel" />
+    <ProgressBar
+        android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Open Export Excel"
-        android:layout_below="@id/btnOpenInventory"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
+
+    <Button
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
+        android:id="@+id/btnReports"
+        android:layout_width="208dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btnOpenExport"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="58dp"
+        android:layout_marginEnd="101dp"
+        android:background="@drawable/btn3"
+        android:text="Raporte" />
 
 </RelativeLayout>

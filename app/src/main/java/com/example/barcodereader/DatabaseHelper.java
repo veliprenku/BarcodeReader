@@ -9,9 +9,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "BarcodeData";
     private static final int DATABASE_VERSION = 1;
-    private static final String TABLE_BARCODES = "Barcodes";
-    private static final String TABLE_DOCUMENTS = "Documents";
-    private static final String COLUMN_ID = "BarcodeID";
+    static final String TABLE_BARCODES = "Barcodes";
+    static final String TABLE_DOCUMENTS = "Documents";
+    static final String COLUMN_ID = "BarcodeID";
     public static final String COLUMN_BARCODE = "Barcode";
     public static final String COLUMN_QUANTITY = "Quantity";
     public static final String COLUMN_DATE_REGISTERED = "DateRegistered";
@@ -52,7 +52,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             int referenceIndex = cursor.getColumnIndex(COLUMN_REFERENCE);
             int commentIndex = cursor.getColumnIndex(COLUMN_COMMENT);
 
-            // Check if the column indexes are valid
             if (referenceIndex != -1 && commentIndex != -1) {
                 String reference = cursor.getString(referenceIndex);
                 String comment = cursor.getString(commentIndex);
@@ -63,18 +62,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
         return document;
     }
-    // Inside your DatabaseHelper class
 
     public void updateBarcodeQuantity(String barcode, int quantity, long documentId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_QUANTITY, quantity);
 
-        // Define the WHERE clause to update the specific barcode for the given documentId
         String selection = COLUMN_BARCODE + " = ? AND " + COLUMN_DOCUMENT_ID + " = ?";
         String[] selectionArgs = {barcode, String.valueOf(documentId)};
 
-        // Perform the update operation
         db.update(TABLE_BARCODES, values, selection, selectionArgs);
         db.close();
     }
@@ -86,11 +82,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void deleteBarcode(String barcode, long documentId) {
         SQLiteDatabase db = this.getWritableDatabase();
 
-        // Define the WHERE clause to delete the specific barcode for the given documentId
         String selection = COLUMN_BARCODE + " = ? AND " + COLUMN_DOCUMENT_ID + " = ?";
         String[] selectionArgs = {barcode, String.valueOf(documentId)};
 
-        // Perform the delete operation
         db.delete(TABLE_BARCODES, selection, selectionArgs);
         db.close();
     }
@@ -103,16 +97,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    // New methods for fetching document IDs and barcodes by document ID:
     public Cursor getAllDocumentIds() {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.rawQuery("SELECT " + COLUMN_DOCUMENT_ID + " FROM " + TABLE_DOCUMENTS, null);
     }
 
+    public void addOrUpdateBarcode(String barcode, int quantity, long documentId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_BARCODE, barcode);
+        values.put(COLUMN_QUANTITY, quantity);
+        values.put(COLUMN_DOCUMENT_ID, documentId);
+
+        int updated = db.update(TABLE_BARCODES, values, COLUMN_BARCODE + " = ? AND " + COLUMN_DOCUMENT_ID + " = ?", new String[]{barcode, String.valueOf(documentId)});
+        if (updated == 0) {
+            db.insert(TABLE_BARCODES, null, values);
+        }
+        db.close();
+    }
+
+
     public Cursor getBarcodesByDocumentId(String documentId) {
         SQLiteDatabase db = this.getReadableDatabase();
 
-        // Define the columns you want to retrieve
         String[] columns = {
                 TABLE_BARCODES + "." + COLUMN_DOCUMENT_ID,
                 TABLE_BARCODES + "." + COLUMN_BARCODE,
@@ -122,18 +129,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 TABLE_DOCUMENTS + "." + COLUMN_COMMENT
         };
 
-        // Define the JOIN statement
         String joinStatement = " JOIN " + TABLE_DOCUMENTS +
                 " ON " + TABLE_BARCODES + "." + COLUMN_DOCUMENT_ID +
                 " = " + TABLE_DOCUMENTS + "." + COLUMN_DOCUMENT_ID;
 
-        // Define the WHERE clause
         String selection = TABLE_BARCODES + "." + COLUMN_DOCUMENT_ID + " = ?";
         String[] selectionArgs = {documentId};
 
-        // Perform the query with JOIN
         return db.query(TABLE_BARCODES + joinStatement, columns, selection, selectionArgs, null, null, null);
     }
+
+
 
 
 

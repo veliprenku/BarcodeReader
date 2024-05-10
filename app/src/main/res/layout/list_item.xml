@@ -24,10 +24,10 @@
 
     <Button
         android:id="@+id/btnDelete"
-        android:layout_width="wrap_content"
+        android:layout_width="72dp"
         android:layout_height="wrap_content"
+        android:background="@drawable/btn3"
         android:text="Fshij"
-        android:textSize="16sp"
-        android:paddingLeft="16dp"/>
+        android:textSize="16sp" />
 
 </LinearLayout>
