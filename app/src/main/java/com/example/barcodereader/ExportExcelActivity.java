@@ -14,6 +14,12 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -36,7 +42,7 @@ public class ExportExcelActivity extends AppCompatActivity {
         dbHelper = new DatabaseHelper(this);
 
         Button btnExportExcel = findViewById(R.id.btnOpenExport);
-        showDocumentSelectionDialog();  // Call the dialog method directly here
+        showDocumentSelectionDialog();
     }
 
 
@@ -74,7 +80,7 @@ public class ExportExcelActivity extends AppCompatActivity {
         builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialogInterface) {
-                finish();  // Close this activity when the dialog dismisses
+                finish();
             }
         });
 
@@ -91,15 +97,28 @@ public class ExportExcelActivity extends AppCompatActivity {
         String sanitizedDocumentId = documentId.replaceAll("[^a-zA-Z0-9]", "_");
 
         Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Barcode_Data_for_DocID_" + sanitizedDocumentId);
+        Sheet sheet = workbook.createSheet("Barkode " + sanitizedDocumentId);
+
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+
+        CellStyle headerStyle = workbook.createCellStyle();
+        headerStyle.setFont(headerFont);
+        headerStyle.setBorderBottom(BorderStyle.THIN);
+        headerStyle.setBorderTop(BorderStyle.THIN);
+        headerStyle.setBorderRight(BorderStyle.THIN);
+        headerStyle.setBorderLeft(BorderStyle.THIN);
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
         Row headerRow = sheet.createRow(0);
-        headerRow.createCell(0).setCellValue("DocumentID");
-        headerRow.createCell(1).setCellValue("Barkodi");
-        headerRow.createCell(2).setCellValue("Sasia");
-        headerRow.createCell(3).setCellValue("Data e Regjistrimit");
-        headerRow.createCell(4).setCellValue("Referenca");
-        headerRow.createCell(5).setCellValue("Komenti");
+        String[] headers = {"DocumentID", "Barkodi", "Sasia", "Data e Regjistrimit", "Referenca", "Komenti"};
+
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
 
         Cursor cursor = dbHelper.getBarcodesByDocumentId(documentId);
 
@@ -111,9 +130,7 @@ public class ExportExcelActivity extends AppCompatActivity {
             int referenceIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_REFERENCE);
             int commentIndex = cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_COMMENT);
 
-
             do {
-
                 Row row = sheet.createRow(sheet.getLastRowNum() + 1);
                 row.createCell(0).setCellValue(cursor.getLong(documentIdIndex));
                 row.createCell(1).setCellValue(cursor.getString(barcodeIndex));
@@ -121,14 +138,19 @@ public class ExportExcelActivity extends AppCompatActivity {
                 row.createCell(3).setCellValue(cursor.getString(dateRegIndex));
                 row.createCell(4).setCellValue(cursor.getString(referenceIndex));
                 row.createCell(5).setCellValue(cursor.getString(commentIndex));
-
             } while (cursor.moveToNext());
         }
+
         if (cursor != null) {
             cursor.close();
         }
+
+        for (int i = 0; i < headers.length; i++) {
+            sheet.setColumnWidth(i, getMaxColumnWidth(sheet, i) * 256);
+        }
+
         ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "BarcodeData_" + documentId + ".xlsx");
+        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "Dokumenti_" + documentId + ".xlsx");
         contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
 
@@ -142,18 +164,33 @@ public class ExportExcelActivity extends AppCompatActivity {
                 try (OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
                     workbook.write(outputStream);
                 }
-                Toast.makeText(this, "File saved to Downloads", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Është ruajtur në Downloads", Toast.LENGTH_LONG).show();
             } else {
-                throw new IOException("Failed to create new MediaStore record.");
+                throw new IOException("Ka deshtuar.");
             }
         } catch (IOException e) {
-            Toast.makeText(this, "Failed to save file: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Ka deshtuar: " + e.getMessage(), Toast.LENGTH_LONG).show();
         } finally {
             try {
                 workbook.close();
             } catch (IOException e) {
-                Toast.makeText(this, "Error closing workbook: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Ka deshtuar : " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
     }
+
+    private int getMaxColumnWidth(Sheet sheet, int column) {
+        int maxWidth = 0;
+        for (Row row : sheet) {
+            Cell cell = row.getCell(column);
+            if (cell != null) {
+                int cellWidth = cell.toString().length();
+                if (cellWidth > maxWidth) {
+                    maxWidth = cellWidth;
+                }
+            }
+        }
+        return maxWidth;
+    }
+
 }

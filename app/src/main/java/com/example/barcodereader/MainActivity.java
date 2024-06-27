@@ -1,5 +1,6 @@
 package com.example.barcodereader;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -11,22 +12,22 @@ public class MainActivity extends AppCompatActivity {
     private Button btnOpenInventory;
     private Button btnOpenExport;
     private Button btnReports;
+    private Button btnAbout;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Find buttons by their IDs
         btnOpenInventory = findViewById(R.id.btnOpenInventory);
         btnOpenExport = findViewById(R.id.btnOpenExport);
         btnReports = findViewById(R.id.btnReports);
+        btnAbout = findViewById(R.id.btnAbout);
 
-        // Set click listeners for the buttons
         btnOpenInventory.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Open Inventory Register Activity
                 Intent intent = new Intent(MainActivity.this, InventoryRegisterActivity.class);
                 startActivity(intent);
             }
@@ -35,7 +36,6 @@ public class MainActivity extends AppCompatActivity {
         btnOpenExport.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Open Export Excel Activity
                 Intent intent = new Intent(MainActivity.this, ExportExcelActivity.class);
                 startActivity(intent);
             }
@@ -43,10 +43,19 @@ public class MainActivity extends AppCompatActivity {
         btnReports.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Open Export Excel Activity
                 Intent intent = new Intent(MainActivity.this, Reports.class);
                 startActivity(intent);
             }
         });
+
+        btnAbout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, AboutActivity.class);
+                startActivity(intent);
+            }
+        });
+
+
     }
 }

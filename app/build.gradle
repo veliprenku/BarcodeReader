@@ -5,6 +5,10 @@ plugins {
 
 
 android {
+    signingConfigs {
+        'Barcode Reader' {
+        }
+    }
     namespace 'com.example.barcodereader'
     compileSdk 33
 
@@ -23,6 +27,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
+        'Barcode Reader' {
         }
     }
     compileOptions {
@@ -32,6 +39,8 @@ android {
 }
 
 dependencies {
+    implementation 'com.journeyapps:zxing-android-embedded:4.1.0'
+    implementation 'com.google.zxing:core:3.4.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'org.apache.poi:poi:5.2.3'

@@ -2,14 +2,18 @@ package com.example.barcodereader;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -22,8 +26,16 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class InventoryRegisterActivity extends AppCompatActivity {
 
@@ -34,6 +46,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
     private long currentDocumentId = -1;
     private AlertDialog alertDialog;
     private DatabaseHelper dbHelper;
+    private HashMap<String, Integer> initialQuantities = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,28 +69,74 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         Button btnNewDocument = findViewById(R.id.btnNewDocument);
         Button btnOpenDocument = findViewById(R.id.btnOpenDocument);
         Button btnSaveToDatabase = findViewById(R.id.btnSaveToDatabase);
+        Button btnScanBarcode = findViewById(R.id.btnScanBarcode);
+        btnScanBarcode.setOnClickListener(v -> launchScanner());
 
-        btnNewDocument.setOnClickListener(v -> resetUI());
+        btnNewDocument.setOnClickListener(v -> {
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Konfirmimi");
+            builder.setMessage("A jeni të sigurt që dëshironi të krijoni të ri?");
+
+
+            builder.setPositiveButton("Po", (dialog, id) -> {
+                resetUI();
+            });
+
+
+            builder.setNegativeButton("Jo", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    dialog.dismiss();
+                }
+            });
+
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        });
+
         btnOpenDocument.setOnClickListener(v -> openDocument());
-        btnSaveToDatabase.setOnClickListener(v -> saveDataToDatabase());
+        btnSaveToDatabase.setOnClickListener(v -> {
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Konfirmimi i Ruajtjes");
+            builder.setMessage("A jeni të sigurt se dëshironi t'i ruani të dhënat?");
+
+
+            builder.setPositiveButton("Po", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    saveDataToDatabase();
+                }
+            });
+
+
+            builder.setNegativeButton("Jo", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    dialog.dismiss();
+                }
+            });
+
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        });
+
     }
 
     private void setupEditTexts() {
-        // Set up the barcode EditText.
         editTextBarcode.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
                 if (editTextQuantity.getVisibility() != View.VISIBLE) {
                     editTextQuantity.setVisibility(View.VISIBLE);
                 }
                 editTextQuantity.postDelayed(() -> {
-                    editTextQuantity.requestFocus(); // Delayed focus to ensure it sticks
-                }, 100); // Adjust delay as necessary
+                    editTextQuantity.requestFocus();
+                }, 100);
                 return true;
             }
             return false;
         });
 
-        // Set up the quantity EditText.
         editTextQuantity.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
                 String barcode = editTextBarcode.getText().toString().trim();
@@ -85,27 +144,59 @@ public class InventoryRegisterActivity extends AppCompatActivity {
                 if (!barcode.isEmpty() && !quantityStr.isEmpty()) {
                     try {
                         int quantity = Integer.parseInt(quantityStr);
-                        updateItemList(barcode, quantity); // Process the data
-                        adapter.notifyDataSetChanged(); // Notify the adapter for data changes
+                        updateItemList(barcode, quantity);
+                        adapter.notifyDataSetChanged();
                         editTextBarcode.setText("");
                         editTextQuantity.setText("");
                         editTextQuantity.setVisibility(View.GONE);
 
                         editTextBarcode.post(() -> {
-                            editTextBarcode.requestFocus(); // Focus back on barcode input immediately
+                            editTextBarcode.requestFocus();
                         });
                     } catch (NumberFormatException e) {
                         Log.e("SetupEditTexts", "Error parsing quantity", e);
                     }
-                    return true; // Handle the key event
+                    return true;
                 }
-                return false; // Do not intercept the key event
+                return false;
             }
-            return false; // Do not intercept the key event
+            return false;
         });
+
+    }
+    private void launchScanner() {
+        IntentIntegrator integrator = new IntentIntegrator(this);
+        integrator.setPrompt("Skano Barkodin");
+        integrator.setBeepEnabled(true);
+        integrator.setOrientationLocked(true);
+        integrator.setCaptureActivity(PortraitCaptureActivity.class);
+        integrator.initiateScan();
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (result != null) {
+            if (result.getContents() == null) {
+                Toast.makeText(this, "Deshtoi", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "U Skanua: " + result.getContents(), Toast.LENGTH_LONG).show();
+                editTextBarcode.setText(result.getContents());
+                editTextQuantity.setVisibility(View.VISIBLE);
+                editTextQuantity.requestFocus();
+                showKeyboard(editTextQuantity);
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
 
+    private void showKeyboard(View view) {
+        if (view.requestFocus()) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+        }
+    }
 
     private void updateItemList(String barcode, int additionalQuantity) {
         boolean found = false;
@@ -135,7 +226,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         ListView listViewDocuments = dialogView.findViewById(R.id.listViewDocuments);
         Button btnDeleteDocument = dialogView.findViewById(R.id.btnDeleteDocument);
 
-        // Disable the delete button initially
+
         btnDeleteDocument.setEnabled(false);
 
         Cursor cursor = dbHelper.getAllDocuments();
@@ -145,13 +236,28 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         int idIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_DOCUMENT_ID);
         int refIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_REFERENCE);
         int commentIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_COMMENT);
+        int dateIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_DATE_REGISTERED);
+
+        SimpleDateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        SimpleDateFormat targetFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault());
+
 
         while (cursor.moveToNext()) {
             long docId = cursor.getLong(idIndex);
             String ref = cursor.getString(refIndex);
             String comment = cursor.getString(commentIndex);
-            documents.add(ref + " - ID: " + docId);
+            String dateRegistered = cursor.getString(dateIndex);
+            String formattedDate = dateRegistered;
+            try {
+                Date date = originalFormat.parse(dateRegistered);
+                formattedDate = targetFormat.format(date);
+            } catch (ParseException e) {
+                Log.e("DateParsing", "Gabim ne kthimin e dates: " + dateRegistered, e);
+            }
+
+            documents.add("Dokumenti: " + ref + " - Krijuar më: " + formattedDate);
             documentIds.add(docId);
+
         }
         cursor.close();
 
@@ -166,18 +272,37 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             editTextDocumentComment.setText(selectedDocument.comment);
             loadItemsForDocument(selectedDocumentId);
 
-            // Enable the delete button when a document is selected
+
             btnDeleteDocument.setEnabled(true);
         });
 
         btnDeleteDocument.setOnClickListener(view -> {
-            if (currentDocumentId != 0) { // Verifikimi i vlerës së currentDocumentId
-                deleteDocument(currentDocumentId);
+            if (currentDocumentId != 0) {
+                AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+                builder1.setTitle("Konfirmimi i Fshirjes");
+                builder1.setMessage("A jeni të sigurt se dëshironi ta fshini këtë dokument?");
+
+                builder1.setPositiveButton("Po", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        deleteDocument(currentDocumentId);
+                        alertDialog.dismiss();
+                    }
+                });
+
+                builder1.setNegativeButton("Jo", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.dismiss();
+                    }
+                });
+
+                AlertDialog confirmationDialog = builder1.create();
+                confirmationDialog.show();
             }
-            alertDialog.dismiss(); // Mbyllja e AlertDialog
         });
 
-        alertDialog = builder.create(); // Inicializimi i AlertDialog në nivel global
+
+
+        alertDialog = builder.create();
         alertDialog.show();
     }
 
@@ -190,6 +315,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
     private void loadItemsForDocument(long docId) {
         Cursor cursor = dbHelper.getBarcodesForDocument(docId);
         itemList.clear();
+        initialQuantities.clear();
         int barcodeIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_BARCODE);
         int quantityIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_QUANTITY);
 
@@ -197,6 +323,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             String barcode = cursor.getString(barcodeIndex);
             int quantity = cursor.getInt(quantityIndex);
             itemList.add(barcode + " - " + quantity);
+            initialQuantities.put(barcode, quantity);
         }
         cursor.close();
         adapter.notifyDataSetChanged();
@@ -225,10 +352,8 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             db.beginTransaction();
             Log.d("Database", "Starting transaction...");
 
-            // Manage document entry or update
             manageDocumentEntry(db, reference, comment);
 
-            // Process each barcode entry
             processBarcodeEntries(db);
 
             db.setTransactionSuccessful();
@@ -272,6 +397,11 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             if (parts.length == 2) {
                 String barcode = parts[0];
                 int quantity = Integer.parseInt(parts[1]);
+
+                if (initialQuantities.containsKey(barcode) && initialQuantities.get(barcode) == quantity) {
+                    continue;
+                }
+
                 if (!updateBarcodeIfExists(db, barcode, quantity)) {
                     addNewBarcode(db, barcode, quantity);
                 }
@@ -289,7 +419,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         if (barcodeIndex == -1 || quantityIndex == -1) {
             Log.e("Database", "Necessary column index not found");
             cursor.close();
-            return false; // or throw an exception if you prefer
+            return false; 
         }
 
         while (cursor.moveToNext()) {
@@ -299,7 +429,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
                 values.put(DatabaseHelper.COLUMN_QUANTITY, existingQuantity + quantity);
                 int rows = db.update(DatabaseHelper.TABLE_BARCODES, values, DatabaseHelper.COLUMN_BARCODE + " = ? AND " + DatabaseHelper.COLUMN_DOCUMENT_ID + " = ?", new String[]{barcode, String.valueOf(currentDocumentId)});
                 if (rows < 1) {
-                    Log.e("Database", "Error updating barcode quantity");
+                    Log.e("Te Dhenat", "Error updating barcode quantity");
                     throw new IllegalStateException("Error updating barcode quantity");
                 }
                 barcodeExists = true;
@@ -318,7 +448,7 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         values.put(DatabaseHelper.COLUMN_DOCUMENT_ID, currentDocumentId);
         long rowId = db.insert(DatabaseHelper.TABLE_BARCODES, null, values);
         if (rowId == -1) {
-            Log.e("Database", "Error inserting new barcode");
+            Log.e("Te Dhenat", "Error inserting new barcode");
             throw new IllegalStateException("Error inserting new barcode");
         }
     }
@@ -330,28 +460,29 @@ public class InventoryRegisterActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-
                 itemList.clear();
+                adapter.notifyDataSetChanged();
+
                 editTextDocumentRef.setText("");
                 editTextDocumentComment.setText("");
                 editTextBarcode.setText("");
                 editTextQuantity.setText("");
                 editTextQuantity.setVisibility(View.GONE);
                 currentDocumentId = -1;
+
+                Log.d("UIReset", "UI components reset and adapter notified.");
             }
         });
     }
+
     private void deleteDocument(long documentId) {
-        // Delete the document and its associated barcodes from the database
         dbHelper.deleteDocument(documentId);
 
-        // Refresh UI
         editTextDocumentRef.setText("");
         editTextDocumentComment.setText("");
         itemList.clear();
         adapter.notifyDataSetChanged();
 
-        // Display success message
         Toast.makeText(this, "Dokumenti u fshi!", Toast.LENGTH_SHORT).show();
     }
 
@@ -381,40 +512,45 @@ public class InventoryRegisterActivity extends AppCompatActivity {
             TextView textViewQuantity = convertView.findViewById(R.id.textViewQuantity);
             textViewQuantity.setText(quantity);
 
-                textViewQuantity.setOnClickListener(v -> {
-                // Create a dialog to edit the quantity
+            textViewQuantity.setOnClickListener(v -> {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
                 builder.setTitle("Ndrysho sasinë");
 
                 final EditText input = new EditText(getContext());
                 input.setText(quantity);
+                input.setInputType(InputType.TYPE_CLASS_NUMBER);
+                int padding = (int) (16 * getContext().getResources().getDisplayMetrics().density);
+                input.setPadding(padding, padding, padding, padding);
                 builder.setView(input);
 
                 builder.setPositiveButton("Ruaj", (dialog, which) -> {
                     String newQuantity = input.getText().toString();
-                    // Update the quantity in the list
-                    String newItem = barcode + " - " + newQuantity;
-                    itemList.set(position, newItem);
+                    itemList.set(position, barcode + " - " + newQuantity);
                     notifyDataSetChanged();
-
                     dbHelper.updateBarcodeQuantity(barcode, Integer.parseInt(newQuantity), currentDocumentId);
                 });
                 builder.setNegativeButton("Anulo", (dialog, which) -> dialog.cancel());
                 builder.show();
             });
-            // Find the delete button
-            Button btnDelete = convertView.findViewById(R.id.btnDelete);
-            btnDelete.setVisibility(View.VISIBLE); // Show the delete button
-            btnDelete.setOnClickListener(v -> {
-                // Remove the item from the list
-                itemList.remove(position);
-                notifyDataSetChanged();
 
-                // Remove the item from the database
-                dbHelper.deleteBarcode(barcode, currentDocumentId);
+            Button btnDelete = convertView.findViewById(R.id.btnDelete);
+            btnDelete.setVisibility(View.VISIBLE);
+            btnDelete.setOnClickListener(v -> {
+                AlertDialog.Builder deleteConfirmBuilder = new AlertDialog.Builder(getContext());
+                deleteConfirmBuilder.setTitle("Konfirmo Fshirjen");
+                deleteConfirmBuilder.setMessage("A jeni të sigurt që dëshironi ta fshini këtë barcode nga lista?");
+                deleteConfirmBuilder.setPositiveButton("Po", (dialog, which) -> {
+                    itemList.remove(position);
+                    notifyDataSetChanged();
+                    dbHelper.deleteBarcode(barcode, currentDocumentId);
+                });
+                deleteConfirmBuilder.setNegativeButton("Anulo", (dialog, which) -> dialog.cancel());
+                deleteConfirmBuilder.show();
             });
+
             return convertView;
         }
+
     }
 }
 

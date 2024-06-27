@@ -1,153 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
-<RelativeLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
 
-    <!-- Button Group at the Top -->
-    <LinearLayout
-        android:id="@+id/buttonGroup"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingTop="16dp">
+        android:layout_height="match_parent">
 
-        <Button
-            android:id="@+id/btnNewDocument"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:padding="4dp"
-            android:textSize="14sp"
-            android:minWidth="100dp"
-            android:minHeight="10dp"
-            android:background="@drawable/btn2"
-            android:text="Krijo të re"
-            android:gravity="center" />
-
-        <Button
-            android:id="@+id/btnOpenDocument"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:padding="4dp"
-            android:textSize="14sp"
-            android:minWidth="100dp"
-            android:minHeight="10dp"
-            android:background="@drawable/btn1"
-
-            android:text="Hape"
-            android:gravity="center" />
-
-        <Button
-            android:id="@+id/btnSaveToDatabase"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:padding="4dp"
-            android:textSize="14sp"
-            android:minWidth="100dp"
-            android:minHeight="10dp"
-            android:background="@drawable/btn3"
-            android:text="Ruaj"
-            android:gravity="center" />
-
-    </LinearLayout>
-
-    <!-- Thin Vertical Line as Scrollbar Indicator -->
-    <View
-        android:id="@+id/scrollbarIndicator"
-        android:layout_width="4dp"
-        android:layout_height="match_parent"
-        android:layout_alignParentEnd="true"
-        android:background="@android:color/darker_gray"/>
-
-    <!-- EditText for Barcode Input -->
-    <EditText
-        android:id="@+id/editTextBarcode"
-        android:layout_below="@id/buttonGroup"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:hint="Shkruaj barkodin"
-        android:minHeight="48dp"
-        android:inputType="number"/>
-
-    <!-- EditText for Quantity Input, initially hidden -->
-    <EditText
-        android:id="@+id/editTextQuantity"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/editTextBarcode"
-        android:layout_margin="16dp"
-        android:hint="Shkruaj sasinë"
-        android:minHeight="48dp"
-        android:visibility="gone"
-        android:inputType="number"/>
-
-    <!-- LinearLayout for header labels -->
-    <LinearLayout
-        android:id="@+id/headerLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_below="@id/editTextQuantity"
-        android:padding="8dp">
-
-        <TextView
-            android:layout_width="0dp"
+            <LinearLayout
+            android:id="@+id/buttonGroup"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:text="Barkodi"
-            android:textSize="18sp"
-            android:gravity="start"
-            android:paddingStart="30dp"/>
+            android:orientation="horizontal"
+            android:paddingTop="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+
+            <Button
+                android:id="@+id/btnNewDocument"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/btn4"
+                android:gravity="center"
+                android:minWidth="100dp"
+                android:minHeight="10dp"
+                android:padding="4dp"
+                android:text="Krijo të re"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnOpenDocument"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/btn1"
+                android:gravity="center"
+                android:minWidth="100dp"
+                android:minHeight="10dp"
+                android:padding="4dp"
+                android:text="Hape"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btnSaveToDatabase"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="@drawable/btn2"
+                android:gravity="center"
+                android:minWidth="100dp"
+                android:minHeight="10dp"
+                android:padding="4dp"
+                android:text="Ruaj"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Barcode Input and Scan Button -->
+        <LinearLayout
+            android:id="@+id/barcodeLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end"
-            android:paddingEnd="120dp"
-            android:text="Sasia"
-            android:textSize="18sp" />
-    </LinearLayout>
+            android:layout_below="@id/buttonGroup"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
 
-    <!-- ListView for displaying items -->
-    <ListView
-        android:id="@+id/listViewItems"
-        android:layout_width="match_parent"
-        android:layout_height="356dp"
-        android:layout_below="@id/headerLayout"
-        android:layout_margin="16dp" />
+            <EditText
+                android:id="@+id/editTextBarcode"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:hint="Shkruaj barkodin"
+                android:inputType="number"/>
 
-    <!-- EditText for Document Comment -->
-    <EditText
-        android:id="@+id/editTextDocumentComment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/listViewItems"
-        android:layout_margin="16dp"
-        android:hint="Komenti"
-        android:inputType="text"
-        android:minHeight="48dp" />
+            <Button
+                android:id="@+id/btnScanBarcode"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/img_2"
+                android:contentDescription="Scan" />
+        </LinearLayout>
 
-    <!-- EditText for Document Reference -->
-    <EditText
-        android:id="@+id/editTextDocumentRef"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/editTextDocumentComment"
-        android:layout_margin="16dp"
-        android:hint="Referenca"
-        android:minHeight="48dp"
-        android:inputType="text"/>
-</RelativeLayout>
+        <!-- Quantity Input -->
+        <EditText
+            android:id="@+id/editTextQuantity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/barcodeLayout"
+            android:layout_margin="16dp"
+            android:hint="Shkruaj sasinë"
+            android:minHeight="48dp"
+            android:visibility="gone"
+            android:inputType="number"/>
+
+        <!-- Header Layout for Labels -->
+        <LinearLayout
+            android:id="@+id/headerLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_below="@id/editTextQuantity"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Barkodi"
+                android:textSize="18sp"
+                android:gravity="start"
+                android:paddingStart="30dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:paddingEnd="120dp"
+                android:text="Sasia"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <!-- ListView to Display Items -->
+        <ListView
+            android:id="@+id/listViewItems"
+            android:layout_width="match_parent"
+            android:layout_height="356dp"
+            android:layout_below="@id/headerLayout"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Document Comment Input -->
+        <EditText
+            android:id="@+id/editTextDocumentComment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/listViewItems"
+            android:layout_margin="16dp"
+            android:hint="Komenti"
+            android:inputType="text"
+            android:minHeight="48dp" />
+
+        <!-- Document Reference Input -->
+        <EditText
+            android:id="@+id/editTextDocumentRef"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/editTextDocumentComment"
+            android:layout_margin="16dp"
+            android:hint="Referenca"
+            android:minHeight="48dp"
+            android:inputType="text"/>
+    </RelativeLayout>
 </ScrollView>

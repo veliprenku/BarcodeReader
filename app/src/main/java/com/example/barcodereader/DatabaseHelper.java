@@ -6,6 +6,10 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "BarcodeData";
     private static final int DATABASE_VERSION = 1;
@@ -28,7 +32,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String CREATE_DOCUMENTS_TABLE = "CREATE TABLE " + TABLE_DOCUMENTS + "("
                 + COLUMN_DOCUMENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + COLUMN_REFERENCE + " TEXT NOT NULL,"
-                + COLUMN_COMMENT + " TEXT"
+                + COLUMN_COMMENT + " TEXT,"
+                + COLUMN_DATE_REGISTERED + " DATETIME DEFAULT CURRENT_TIMESTAMP"
                 + ")";
         String CREATE_BARCODES_TABLE = "CREATE TABLE " + TABLE_BARCODES + "("
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -41,6 +46,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_DOCUMENTS_TABLE);
         db.execSQL(CREATE_BARCODES_TABLE);
     }
+
 
     public InventoryDocument getDocumentById(long documentId) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -90,16 +96,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     public void deleteDocument(long documentId) {
         SQLiteDatabase db = this.getWritableDatabase();
-        // Delete the document from the Documents table
         db.delete(TABLE_DOCUMENTS, COLUMN_DOCUMENT_ID + " = ?", new String[]{String.valueOf(documentId)});
-        // Delete associated barcodes from the Barcodes table
+
         db.delete(TABLE_BARCODES, COLUMN_DOCUMENT_ID + " = ?", new String[]{String.valueOf(documentId)});
         db.close();
     }
 
     public Cursor getAllDocumentIds() {
         SQLiteDatabase db = this.getReadableDatabase();
-        return db.rawQuery("SELECT " + COLUMN_DOCUMENT_ID + " FROM " + TABLE_DOCUMENTS, null);
+        return db.rawQuery("SELECT " + COLUMN_DOCUMENT_ID + COLUMN_DATE_REGISTERED + " FROM " + TABLE_DOCUMENTS, null);
     }
 
     public void addOrUpdateBarcode(String barcode, int quantity, long documentId) {
@@ -156,6 +161,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_BARCODES);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_DOCUMENTS);
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE " + TABLE_DOCUMENTS + " ADD COLUMN " + COLUMN_DATE_REGISTERED + " DATETIME DEFAULT CURRENT_TIMESTAMP");
+        }
         onCreate(db);
     }
 
@@ -193,9 +201,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put(COLUMN_REFERENCE, reference);
         values.put(COLUMN_COMMENT, comment);
+        values.put(COLUMN_DATE_REGISTERED, getDateTime());
         db.update(TABLE_DOCUMENTS, values, COLUMN_DOCUMENT_ID + " = ?", new String[]{String.valueOf(documentId)});
         db.close();
     }
+
+    private String getDateTime() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
+
 
 }
 

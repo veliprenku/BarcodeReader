@@ -1,14 +1,12 @@
 package com.example.barcodereader;
 
-public class BarcodeData {
+public class BarcodeItem {
     private String barcode;
     private int quantity;
-    private int color; // This holds the color associated with the barcode in the chart
 
-    public BarcodeData(String barcode, int quantity, int color) {
+    public BarcodeItem(String barcode, int quantity) {
         this.barcode = barcode;
         this.quantity = quantity;
-        this.color = color;
     }
 
     public String getBarcode() {
@@ -17,9 +15,5 @@ public class BarcodeData {
 
     public int getQuantity() {
         return quantity;
-    }
-
-    public int getColor() {
-        return color;
     }
 }

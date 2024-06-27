@@ -12,12 +12,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BarcodeReader"
         tools:targetApi="31">
+
         <activity android:name=".ReportsActivity">
             <!-- Add any specific intent filters or configurations here -->
         </activity>
-
-        <activity
-            android:name=".MainActivity"
+        <activity android:name=".PortraitCaptureActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/zxing_CaptureTheme">
+        </activity>
+        <activity android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,11 +31,16 @@
             android:windowSoftInputMode="adjustResize"/>
         <activity android:name=".ExportExcelActivity"/>
         <activity android:name=".Reports"/>
+        <!-- Shtohet DashboardActivity -->
+        <activity android:name=".AboutActivity" />
 
     </application>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
+    <!-- Leje për shkrimin dhe leximin e storage-it të jashtëm -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!-- Leje për menaxhimin e storage-it të jashtëm nëse është absolutisht e nevojshme -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <!-- Leje për qasjen në internet nëse është e nevojshme për funksionalitete specifike -->
+    <uses-permission android:name="android.permission.INTERNET"/>
 </manifest>
